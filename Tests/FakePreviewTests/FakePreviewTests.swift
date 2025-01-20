@@ -9,40 +9,105 @@ import XCTest
 import FakePreviewMacros
 
 let testMacros: [String: Macro.Type] = [
-    "stringify": StringifyMacro.self,
+    "FakePreview": SwiftUIFakePreviewMacro.self,
 ]
 #endif
 
 final class FakePreviewTests: XCTestCase {
-    func testMacro() throws {
-        #if canImport(FakePreviewMacros)
+    #if canImport(FakePreviewMacros)
+    func testFakePreviewMacro_with_trailingClosure() throws {
         assertMacroExpansion(
             """
-            #stringify(a + b)
+            #FakePreview {
+                ForEach(0 ..< 3) { i in
+                    Text("\\(i)")
+                }
+            }
             """,
             expandedSource: """
-            (a + b, "a + b")
+            class __macro_local_9classNamefMu_ {
+                @objc class func injected() {
+                    let v = Group {
+                        ForEach(0 ..< 3) { i in
+                            Text("\\(i)")
+                        }
+                    }
+                    let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+                    windowScene?.windows.first?.rootViewController = UIHostingController(rootView: v)
+                }
+            }
             """,
             macros: testMacros
         )
-        #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
     }
 
-    func testMacroWithStringLiteral() throws {
-        #if canImport(FakePreviewMacros)
+    func testFakePreviewMacro_with_name_and_trailingClosure() throws {
         assertMacroExpansion(
-            #"""
-            #stringify("Hello, \(name)")
-            """#,
-            expandedSource: #"""
-            ("Hello, \(name)", #""Hello, \(name)""#)
-            """#,
+            """
+            #FakePreview("Hello, world!") {
+                Text("Hello, world!")
+            }
+            """,
+            expandedSource: """
+            class __macro_local_9classNamefMu_ {
+                @objc class func injected() {
+                    let v = Group {
+                        Text("Hello, world!")
+                    }
+                    let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+                    windowScene?.windows.first?.rootViewController = UIHostingController(rootView: v)
+                }
+            }
+            """,
             macros: testMacros
         )
-        #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
     }
+
+    func testFakePreviewMacro_with_closure_as_argumet() throws {
+        assertMacroExpansion(
+            """
+            #FakePreview(body: {
+                Text("Hello, world!")
+            })
+            """,
+            expandedSource: """
+            class __macro_local_9classNamefMu_ {
+                @objc class func injected() {
+                    let v = Group {
+                        Text("Hello, world!")
+                    }
+                    let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+                    windowScene?.windows.first?.rootViewController = UIHostingController(rootView: v)
+                }
+            }
+            """,
+            macros: testMacros
+        )
+    }
+
+    func testFakePreviewMacro_with_name_and_closure_as_argumet() throws {
+        assertMacroExpansion(
+            """
+            #FakePreview(
+                "Hello, world!",
+                body: {
+                    Text("Hello, world!")
+                }
+            )
+            """,
+            expandedSource: """
+            class __macro_local_9classNamefMu_ {
+                @objc class func injected() {
+                    let v = Group {
+                            Text("Hello, world!")
+                        }
+                    let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+                    windowScene?.windows.first?.rootViewController = UIHostingController(rootView: v)
+                }
+            }
+            """,
+            macros: testMacros
+        )
+    }
+    #endif
 }
